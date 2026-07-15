@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#174d3c">
+  <meta name="description" content="Личный тренажёр японских кандзи">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-48.png" type="image/png" sizes="48x48">
+  <link rel="apple-touch-icon" href="icons/icon-180.png" sizes="180x180">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="premium-study.css">
+  <link rel="stylesheet" href="premium-fix.css?v=9">
+  <title>Кандзи — личная коллекция</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">К содержимому</a>
+  <header class="topbar"><div><p class="eyebrow">私の漢字帳</p><h1>Кандзи</h1></div><button id="settings-button" class="icon-button" type="button" aria-label="Открыть настройки">⋯</button></header>
+  <div id="offline-banner" class="banner" role="status" hidden></div>
+  <main id="main" tabindex="-1">
+    <section id="loading-view" class="view active" aria-live="polite"><div class="skeleton hero-skeleton"></div><div class="skeleton row-skeleton"></div><div class="skeleton grid-skeleton"></div></section>
+    <section id="library-view" class="view" aria-labelledby="library-title">
+      <div class="section-heading"><div><p class="eyebrow">Коллекция</p><h2 id="library-title">Библиотека</h2></div><button id="refresh-button" class="quiet-button" type="button">Обновить</button></div>
+      <div id="stats" class="stats" aria-label="Статистика библиотеки"></div>
+      <div class="filters"><label class="search-field"><span class="sr-only">Поиск</span><input id="search-input" type="search" placeholder="Кандзи, значение, чтение…" autocomplete="off"></label><div class="filter-row"><select id="jlpt-filter" aria-label="Фильтр JLPT"><option value="">Все JLPT</option></select><select id="lesson-filter" aria-label="Фильтр по уроку"><option value="">Все уроки</option></select><select id="status-filter" aria-label="Фильтр по статусу"><option value="">Все статусы</option><option value="new">Новые</option><option value="learning">Изучаемые</option><option value="favorite">Избранные</option><option value="hard">Сложные</option></select></div></div>
+      <div id="library-grid" class="card-grid"></div><div id="library-empty" class="empty-state" hidden></div>
+    </section>
+    <section id="session-view" class="view" aria-labelledby="session-title"><div class="section-heading"><div><p id="session-kicker" class="eyebrow">Сессия</p><h2 id="session-title">Учить</h2></div><button id="session-exit" class="quiet-button" type="button">Завершить</button></div><div id="session-progress" class="session-progress" aria-live="polite"></div><div id="session-content"></div></section>
+    <section id="random-view" class="view" aria-labelledby="random-title"><div class="section-heading"><div><p class="eyebrow">Открытие</p><h2 id="random-title">Случайная карточка</h2></div><button id="random-next" class="quiet-button" type="button">Другая</button></div><div class="random-controls"><select id="random-scope" aria-label="Выбор карточек"><option value="all">Все кандзи</option><option value="learning">Только изученные</option><option value="new">Только новые</option><option value="hard">Только сложные</option><option value="favorite">Только избранные</option></select><select id="random-jlpt" aria-label="JLPT для случайной карточки"><option value="">Любой JLPT</option></select><select id="random-lesson" aria-label="Урок для случайной карточки"><option value="">Любой урок</option></select></div><div id="random-content"></div></section>
+    <section id="hard-view" class="view" aria-labelledby="hard-title"><div class="section-heading"><div><p class="eyebrow">Особое внимание</p><h2 id="hard-title">Сложные</h2></div><button id="practice-hard" class="primary-button" type="button">Повторить сложные</button></div><div id="hard-grid" class="card-grid"></div><div id="hard-empty" class="empty-state" hidden>Пока сложных карточек нет.</div></section>
+  </main>
+  <nav class="bottom-nav" aria-label="Основная навигация">
+    <button data-route="library" class="active" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5Z"/><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg><small>Библиотека</small></button>
+    <button data-route="learn" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m2.5 8 9.5-5 9.5 5-9.5 5-9.5-5Z"/><path d="M6 10.5V16c3.5 2.7 8.5 2.7 12 0v-5.5"/><path d="M21.5 8v6"/></svg><small>Учить</small></button>
+    <button data-route="review" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><small>Повторить</small></button>
+    <button data-route="random" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="2"/><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M7 7h.01M12 12h.01M13 17h.01M17 13h.01M17 17h.01"/></svg><small>Случайно</small></button>
+    <button data-route="hard" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4-5.7-3-5.7 3 1.1-6.4-4.6-4.5 6.4-.9L12 2.8Z"/></svg><small>Сложные</small></button>
+  </nav>
+  <dialog id="card-dialog" aria-labelledby="dialog-title"><div class="dialog-bar"><h2 id="dialog-title">Карточка</h2><button id="dialog-close" class="icon-button" type="button" aria-label="Закрыть">×</button></div><div id="dialog-content"></div></dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title"><div class="dialog-bar"><h2 id="settings-title">Настройки</h2><button id="settings-close" class="icon-button" type="button" aria-label="Закрыть">×</button></div><div class="settings-list"><button id="export-button" class="secondary-button" type="button">Экспортировать прогресс</button><label class="secondary-button file-button">Импортировать прогресс<input id="import-input" type="file" accept="application/json"></label><button id="clear-button" class="danger-button" type="button">Очистить прогресс</button><p id="settings-message" role="status"></p></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="config-live.js"></script><script type="module" src="app-card.js"></script><script type="module" src="premium-study.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+html, body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Mobile bottom navigation: same markup and icons, clearer touch targets. */
+.bottom-nav {
+  height: calc(74px + env(safe-area-inset-bottom));
+  padding: 6px 6px env(safe-area-inset-bottom);
+}
+
+.bottom-nav button {
+  min-height: 62px;
+  margin: 0 2px;
+  padding: 6px 1px 5px;
+  border-radius: 14px;
+  color: #748079;
+}
+
+.bottom-nav button.active {
+  color: #173f35;
+  background: #eef3e9;
+}
+
+.bottom-nav svg {
+  width: 24px;
+  height: 24px;
+  margin: 0 auto 6px;
+}
+
+.bottom-nav small {
+  margin: 0;
+  font-size: clamp(.64rem, 2.8vw, .7rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* Kanji mini-card: roomier without changing its content or structure. */
+.card-grid {
+  gap: 10px;
+}
+
+.mini-card {
+  min-height: 218px;
+  padding: 18px;
+  border-color: rgba(47, 93, 80, .2);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(30, 45, 38, .055);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+.mini-card:active {
+  transform: scale(.98);
+  box-shadow: 0 3px 10px rgba(30, 45, 38, .05);
+}
+
+.mini-kanji {
+  font-size: clamp(3.25rem, 14vw, 3.5rem);
+  line-height: 1.08;
+}
+
+.mini-card strong {
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+.mini-card small {
+  margin-top: 7px;
+  line-height: 1.35;
+}
+
+.mini-card em {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf3e8;
+  color: #2f5d50;
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.status-dot {
+  top: 13px;
+  right: 13px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #fffdf8;
+  box-shadow: 0 0 0 1px rgba(47, 93, 80, .16);
+}
+
+@media (hover: hover) {
+  .mini-card:hover {
+    border-color: rgba(47, 93, 80, .28);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(30, 45, 38, .07);
+  }
+}
+
+@media (max-width: 370px) {
+  .mini-card {
+    min-height: 212px;
+    padding: 16px;
+  }
+
+  .bottom-nav button {
+    margin-inline: 1px;
+  }
+
+  .bottom-nav small {
+    font-size: .62rem;
+  }
+}
+/* Preserve the full external mnemonic image instead of the legacy 4:3 crop. */
+.premium-card .premium-mnemonic .image-frame {
+  height: auto;
+  aspect-ratio: auto;
+  overflow: visible;
+}
+
+.premium-card .premium-mnemonic .image-frame img {
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
