@@ -157,7 +157,7 @@ button:active { transform: scale(.98); }
 }
 .premium-card .kanji-glyph {
   color: var(--green);
-  font-size: clamp(70px, 22vw, 105px);
+  font-size: clamp(70px, 22vw, 80px);
   line-height: .94;
 }
 .premium-card .hero-reading {
@@ -170,7 +170,7 @@ button:active { transform: scale(.98); }
 .premium-card .kanji-hero h3 {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: .84rem;
+  font-size: 1.25rem;
   font-weight: 500;
 }
 .premium-card .kanji-hero > p { display: none; }
@@ -214,12 +214,12 @@ button:active { transform: scale(.98); }
 .premium-card .info-pair span {
   margin: 0 0 3px;
   color: var(--muted);
-  font-size: .67rem;
+  font-size: .84rem;
 }
 .premium-card .info-pair strong {
   display: block;
   overflow-wrap: anywhere;
-  font-size: .89rem;
+  font-size: .98rem;
 }
 
 .premium-card .word-strip { display: grid; gap: 5px; overflow: visible; }
@@ -245,9 +245,9 @@ button:active { transform: scale(.98); }
   text-overflow: clip;
   white-space: normal;
 }
-.premium-card .word-row .word-main { font-size: .94rem; }
-.premium-card .word-row .reading { color: var(--green); font-size: .84rem; }
-.premium-card .word-row .translation { color: var(--muted); font-size: .82rem; }
+.premium-card .word-row .word-main { font-size: 1.25rem; }
+.premium-card .word-row .reading { color: var(--green); font-size: 1.04rem; }
+.premium-card .word-row .translation { color: var(--muted); font-size: .92rem; }
 
 .premium-card .sentence-list { display: grid; gap: 0; }
 .premium-card .sentence {
@@ -267,9 +267,9 @@ button:active { transform: scale(.98); }
   border-radius: 50%;
   background: var(--green);
 }
-.premium-card .sentence .word-main { display: block; font-size: 1rem; line-height: 1.35; }
-.premium-card .sentence .reading { margin-top: 2px; color: var(--green); font-size: .8rem; line-height: 1.35; white-space: pre-wrap; }
-.premium-card .sentence .translation { margin-top: 1px; color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.premium-card .sentence .word-main { display: block; font-size: 1.25rem; line-height: 1.35; }
+.premium-card .sentence .reading { margin-top: 2px; color: var(--green); font-size: .95rem; line-height: 1.35; white-space: pre-wrap; }
+.premium-card .sentence .translation { margin-top: 1px; color: var(--muted); font-size: .86rem; line-height: 1.35; }
 
 .premium-card .mnemonic-figure { margin: 0; }
 .premium-card .image-frame {
@@ -318,7 +318,7 @@ button:active { transform: scale(.98); }
 .premium-card > .card-section.card-footer,
 .premium-card > .card-section:last-child { padding-top: 12px; padding-bottom: 14px; }
 .premium-card .card-meta { gap: 5px; }
-.premium-card .tag { padding: 5px 8px; background: var(--surface-soft); font-size: .69rem; }
+.premium-card .tag { padding: 5px 8px; background: var(--surface-soft); font-size: .80rem; }
 .premium-card .favorite-button { margin-top: 9px; }
 .premium-card .progress-copy { margin: 8px 0 0; font-size: .72rem; line-height: 1.4; }
 
