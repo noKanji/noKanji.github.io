@@ -252,7 +252,7 @@ function renderToday() {
 
   const copy = el("div", "today-copy");
   copy.append(
-    el("p", "eyebrow", "Сегодня"),
+    el("p", "eyebrow", "План на день"),
     el("h2", "", totalToday ? `${totalToday} карточек` : "На сегодня всё"),
     el("p", "today-description", totalToday
       ? `${counts.due} на повторение · ${counts.newToday} новых`
@@ -277,6 +277,7 @@ function renderToday() {
   }));
 
   $("today-new-limit").textContent = `${state.settings.dailyNewLimit} новых в день`;
+  $("today-new-limit").title = "Изменить дневной лимит";
 }
 
 function renderLibrary() {
@@ -399,7 +400,7 @@ function createFullCard(card, { interactive = true } = {}) {
 
   const footer = el("section", "card-section card-footer");
   const tags = el("div", "card-meta");
-  [card.lesson, card.jlpt, card.date_added ? `Добавлено: ${formatDate(card.date_added)}` : ""]
+  [card.lesson, card.jlpt, card.date_added ? `Добавлено: ${formatDate(card.date_added, { dateOnly: true })}` : ""]
     .filter(has)
     .forEach(value => tags.append(el("span", "tag", value)));
   footer.append(tags);
@@ -744,13 +745,13 @@ function syncSettingsControls() {
   $("new-limit-select").value = String(state.settings.dailyNewLimit);
 }
 
-function formatDate(value) {
+function formatDate(value, { dateOnly = false } = {}) {
   if (!value) return "не назначено";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat("ru-RU", {
     dateStyle: "medium",
-    timeStyle: String(value).includes("T") ? "short" : undefined
+    timeStyle: !dateOnly && String(value).includes("T") ? "short" : undefined
   }).format(date);
 }
 
@@ -824,7 +825,14 @@ $("practice-hard").addEventListener("click", () => {
 });
 
 $("dialog-close").addEventListener("click", () => closeDialog($("card-dialog")));
-$("settings-button").addEventListener("click", () => openDialog($("settings-dialog")));
+$("settings-button").addEventListener("click", () => {
+  syncSettingsControls();
+  openDialog($("settings-dialog"));
+});
+$("today-new-limit").addEventListener("click", () => {
+  syncSettingsControls();
+  openDialog($("settings-dialog"));
+});
 $("settings-close").addEventListener("click", () => closeDialog($("settings-dialog")));
 [$("card-dialog"), $("settings-dialog")].forEach(dialog => {
   dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
