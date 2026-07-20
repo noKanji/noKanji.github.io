@@ -1,4 +1,4 @@
-/* Stable GitHub Pages release v8 */
+/* Stable GitHub Pages release v11 */
 importScripts("./config-live.js");
 
 const SHELL_CACHE = `${CONFIG.CACHE_VERSION}-shell`;

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="premium-study.css">
-  <link rel="stylesheet" href="premium-fix.css?v=10">
+  <link rel="stylesheet" href="premium-fix.css?v=11">
   <link rel="stylesheet" href="styles.css">
   <title>Кандзи — личная коллекция</title>
 </head>
@@ -64,6 +64,10 @@
             <span>Новые кандзи</span>
             <small>В рамках дневного лимита</small>
           </button>
+          <button id="today-random-kanji" class="secondary-button practice-action" type="button">
+            <span>Случайный кандзи</span>
+            <small>Одна карточка без занятия</small>
+          </button>
         </div>
       </section>
     </section>
@@ -112,6 +116,30 @@
       </div>
       <div id="session-progress" class="session-progress" aria-live="polite"></div>
       <div id="session-content"></div>
+    </section>
+
+    <section id="words-view" class="view words-view" aria-labelledby="words-title">
+      <div class="section-heading words-heading">
+        <div>
+          <p class="eyebrow">Быстрый просмотр</p>
+          <h2 id="words-title">Слова</h2>
+        </div>
+        <button id="words-shuffle" class="quiet-button" type="button">Перемешать</button>
+      </div>
+
+      <div class="words-summary">
+        <span id="words-count">0 слов</span>
+        <span>Бесконечная стопка · смахивайте вверх</span>
+      </div>
+
+      <div id="word-stack-stage" class="word-stack-stage" aria-live="polite">
+        <div id="word-stack" class="word-stack"></div>
+      </div>
+
+      <button id="words-next" class="word-next-button" type="button" aria-label="Показать следующее слово">
+        Следующее слово <span aria-hidden="true">↑</span>
+      </button>
+      <p class="word-stack-hint">Потяните верхнюю карточку вверх — следующая поднимется из стопки.</p>
     </section>
 
     <section id="random-view" class="view" aria-labelledby="random-title">
@@ -180,9 +208,9 @@
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5Z"/><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
       <small>Библиотека</small>
     </button>
-    <button data-route="random" type="button">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="2"/><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M7 7h.01M12 12h.01M13 17h.01M17 13h.01M17 17h.01"/></svg>
-      <small>Случайно</small>
+    <button data-route="words" type="button">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="2"/><path d="M8 7h8M8 11h5"/><path d="M3 7v12a2 2 0 0 0 2 2h12"/></svg>
+      <small>Слова</small>
     </button>
     <button data-route="progress" type="button">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>

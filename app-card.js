@@ -26,7 +26,14 @@ const state = {
   session: null,
   randomId: null,
   usingCache: false,
-  settings: readSettings()
+  settings: readSettings(),
+  words: {
+    items: [],
+    deck: [],
+    index: 0,
+    moving: false,
+    cycle: 0
+  }
 };
 
 const $ = id => document.getElementById(id);
@@ -104,6 +111,7 @@ async function loadCards(force = false) {
     }
   }
 
+  initializeWordDeck();
   populateFilters();
   syncSettingsControls();
   routeTo("today");
@@ -125,6 +133,7 @@ function showView(name) {
 function routeTo(route) {
   state.route = route;
   document.body.classList.toggle("session-active", route === "session");
+  document.body.classList.toggle("words-active", route === "words");
   document.querySelectorAll(".bottom-nav button").forEach(button => {
     button.classList.toggle("active", button.dataset.route === route);
   });
@@ -135,6 +144,9 @@ function routeTo(route) {
   } else if (route === "library") {
     showView("library");
     renderLibrary();
+  } else if (route === "words") {
+    showView("words");
+    renderWords();
   } else if (route === "random") {
     showView("random");
     renderRandom();
@@ -164,6 +176,298 @@ function populateFilters() {
   populateSelect($("lesson-filter"), lessons, "Все уроки");
   populateSelect($("random-jlpt"), jlpt, "Любой JLPT");
   populateSelect($("random-lesson"), lessons, "Любой урок");
+}
+
+
+function buildWordItems(cards) {
+  const grouped = new Map();
+
+  cards.forEach(card => {
+    card.wordItems.forEach(item => {
+      if (!has(item.main)) return;
+      const main = String(item.main).trim();
+      const reading = String(item.reading || "").trim();
+      const translation = String(item.translation || "").trim();
+      const key = [main, reading, translation].join("\u241f").toLocaleLowerCase("ja");
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          key,
+          main,
+          reading,
+          translation,
+          lessons: new Set(),
+          jlpt: new Set(),
+          sources: new Set()
+        });
+      }
+
+      const word = grouped.get(key);
+      if (has(card.lesson)) word.lessons.add(card.lesson);
+      if (has(card.jlpt)) word.jlpt.add(card.jlpt);
+      if (has(card.kanji)) word.sources.add(card.kanji);
+    });
+  });
+
+  return [...grouped.values()].map(word => ({
+    ...word,
+    lessons: [...word.lessons],
+    jlpt: [...word.jlpt],
+    sources: [...word.sources]
+  }));
+}
+
+function shuffled(items) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(Math.random() * (index + 1));
+    [result[index], result[target]] = [result[target], result[index]];
+  }
+  return result;
+}
+
+function initializeWordDeck() {
+  const items = buildWordItems(state.cards);
+  state.words.items = items;
+  state.words.deck = shuffled(items);
+  state.words.index = 0;
+  state.words.moving = false;
+  state.words.cycle = 0;
+}
+
+function currentWord(offset = 0) {
+  const deck = state.words.deck;
+  if (!deck.length) return null;
+  return deck[(state.words.index + offset) % deck.length];
+}
+
+function wordCountLabel(count) {
+  const remainder100 = count % 100;
+  const remainder10 = count % 10;
+  if (remainder100 >= 11 && remainder100 <= 14) return `${count} слов`;
+  if (remainder10 === 1) return `${count} слово`;
+  if (remainder10 >= 2 && remainder10 <= 4) return `${count} слова`;
+  return `${count} слов`;
+}
+
+function wordMeta(word) {
+  return [word.lessons[0], word.jlpt[0]].filter(has).join(" · ");
+}
+
+function createWordStackCard(word, depth) {
+  const card = el("article", `word-stack-card word-depth-${depth}`);
+  card.dataset.depth = String(depth);
+  card.style.setProperty("--depth", String(depth));
+  card.setAttribute(
+    "aria-label",
+    [word.main, word.reading, word.translation].filter(has).join(", ")
+  );
+
+  const top = el("div", "word-card-top");
+  const jlpt = word.jlpt[0] || "単語";
+  top.append(el("span", "word-level-badge", jlpt));
+  const meta = word.lessons[0] || "";
+  if (meta) top.append(el("span", "word-lesson", meta));
+  card.append(top);
+
+  const content = el("div", "word-card-content");
+  if (word.reading) content.append(el("span", "word-card-reading", word.reading));
+
+  const mainClass = word.main.length >= 9
+    ? "word-card-main word-card-main-long"
+    : word.main.length >= 6
+      ? "word-card-main word-card-main-medium"
+      : "word-card-main";
+  content.append(el("strong", mainClass, word.main));
+
+  if (word.translation) {
+    content.append(el("span", "word-card-translation", word.translation));
+  } else {
+    content.append(el("span", "word-card-translation word-card-empty", "Без перевода"));
+  }
+  card.append(content);
+
+  const footer = el("div", "word-card-footer");
+  const source = word.sources.slice(0, 3).join(" · ");
+  footer.append(
+    el("span", "", source ? `Кандзи: ${source}` : "Из словаря карточек"),
+    el("span", "word-up-mark", "↑")
+  );
+  card.append(footer);
+
+  return card;
+}
+
+function renderWords() {
+  const stack = $("word-stack");
+  const count = state.words.items.length;
+  $("words-count").textContent = wordCountLabel(count);
+
+  if (!count) {
+    stack.replaceChildren(el("div", "empty-state word-empty", "В карточках пока нет примеров слов."));
+    $("words-next").disabled = true;
+    $("words-shuffle").disabled = true;
+    return;
+  }
+
+  $("words-next").disabled = false;
+  $("words-shuffle").disabled = count < 2;
+
+  const visibleCount = Math.min(3, count);
+  const cards = [];
+  for (let depth = visibleCount - 1; depth >= 0; depth -= 1) {
+    const word = currentWord(depth);
+    if (!word) continue;
+    cards.push(createWordStackCard(word, depth));
+  }
+
+  stack.replaceChildren(...cards);
+  const stage = $("word-stack-stage");
+  stage.classList.remove("advancing");
+  stage.style.setProperty("--word-progress", "0");
+
+  const topCard = stack.querySelector('.word-stack-card[data-depth="0"]');
+  if (topCard) attachWordStackSwipe(topCard);
+}
+
+function resetWordDrag(card) {
+  const stage = $("word-stack-stage");
+  card.style.transition = reducedMotion()
+    ? "none"
+    : "transform .34s cubic-bezier(.22,.8,.25,1), opacity .25s ease, box-shadow .25s ease";
+  card.style.transform = "";
+  card.style.opacity = "";
+  card.classList.remove("dragging");
+  stage.style.setProperty("--word-progress", "0");
+  window.setTimeout(() => {
+    if (card.isConnected) card.style.transition = "";
+  }, reducedMotion() ? 0 : 360);
+}
+
+function advanceWordStack(card = null, driftX = 0) {
+  if (state.words.moving || !state.words.deck.length) return;
+  state.words.moving = true;
+
+  const stage = $("word-stack-stage");
+  const activeCard = card || $("word-stack").querySelector('.word-stack-card[data-depth="0"]');
+  stage.classList.add("advancing");
+  stage.style.setProperty("--word-progress", "1");
+
+  if (activeCard) {
+    const exitX = Math.max(-70, Math.min(70, driftX * 1.35));
+    const rotation = Math.max(-7, Math.min(7, driftX / 14));
+    activeCard.classList.remove("dragging");
+    activeCard.style.transition = reducedMotion()
+      ? "none"
+      : "transform .34s cubic-bezier(.32,.02,.2,1), opacity .26s ease";
+    requestAnimationFrame(() => {
+      activeCard.style.transform = `translate3d(${exitX}px, -115vh, 0) rotate(${rotation}deg) scale(.97)`;
+      activeCard.style.opacity = "0";
+    });
+  }
+
+  const delay = reducedMotion() ? 20 : 330;
+  window.setTimeout(() => {
+    const lastWord = currentWord(0);
+    state.words.index += 1;
+
+    if (state.words.index >= state.words.deck.length) {
+      const lastKey = lastWord?.key;
+      state.words.deck = shuffled(state.words.items);
+      if (
+        state.words.deck.length > 1 &&
+        state.words.deck[0]?.key === lastKey
+      ) {
+        [state.words.deck[0], state.words.deck[1]] = [state.words.deck[1], state.words.deck[0]];
+      }
+      state.words.index = 0;
+      state.words.cycle += 1;
+    }
+
+    state.words.moving = false;
+    if (state.route === "words") renderWords();
+  }, delay);
+}
+
+function attachWordStackSwipe(card) {
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startTime = 0;
+  let deltaX = 0;
+  let deltaY = 0;
+  let vertical = false;
+
+  card.addEventListener("pointerdown", event => {
+    if (state.words.moving) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    startTime = performance.now();
+    deltaX = 0;
+    deltaY = 0;
+    vertical = false;
+    card.classList.add("dragging");
+    card.setPointerCapture?.(pointerId);
+  });
+
+  card.addEventListener("pointermove", event => {
+    if (event.pointerId !== pointerId || state.words.moving) return;
+    const rawX = event.clientX - startX;
+    const rawY = event.clientY - startY;
+
+    if (!vertical && Math.max(Math.abs(rawX), Math.abs(rawY)) > 8) {
+      vertical = Math.abs(rawY) >= Math.abs(rawX) * .78;
+    }
+    if (!vertical) return;
+
+    event.preventDefault();
+    deltaX = Math.max(-42, Math.min(42, rawX * .22));
+    deltaY = rawY < 0
+      ? Math.max(-280, rawY)
+      : Math.min(42, rawY * .24);
+
+    const progress = Math.max(0, Math.min(1, -deltaY / 150));
+    const rotation = deltaX / 18;
+    const scale = 1 - progress * .025;
+    card.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) rotate(${rotation}deg) scale(${scale})`;
+    card.style.opacity = String(1 - progress * .12);
+    $("word-stack-stage").style.setProperty("--word-progress", String(progress));
+  });
+
+  const finish = event => {
+    if (event.pointerId !== pointerId) return;
+    card.releasePointerCapture?.(pointerId);
+    pointerId = null;
+
+    const elapsed = Math.max(1, performance.now() - startTime);
+    const velocityY = deltaY / elapsed;
+    const shouldAdvance = vertical && (deltaY <= -76 || velocityY <= -.48);
+
+    if (shouldAdvance) {
+      advanceWordStack(card, deltaX);
+    } else {
+      resetWordDrag(card);
+    }
+  };
+
+  card.addEventListener("pointerup", finish);
+  card.addEventListener("pointercancel", finish);
+}
+
+function shuffleWords() {
+  if (state.words.items.length < 2 || state.words.moving) return;
+  const currentKey = currentWord(0)?.key;
+  state.words.deck = shuffled(state.words.items);
+  if (state.words.deck[0]?.key === currentKey) {
+    [state.words.deck[0], state.words.deck[1]] = [state.words.deck[1], state.words.deck[0]];
+  }
+  state.words.index = 0;
+  state.words.cycle += 1;
+  renderWords();
+  showToast("Стопка перемешана");
 }
 
 function primaryReading(card) {
@@ -775,6 +1079,19 @@ function handleKeyboard(event) {
     return;
   }
 
+  const interactiveTarget = event.target instanceof Element &&
+    event.target.closest("input, select, textarea, button, dialog");
+
+  if (
+    state.route === "words" &&
+    !interactiveTarget &&
+    (event.key === "ArrowUp" || event.key === " " || event.key === "Enter")
+  ) {
+    event.preventDefault();
+    advanceWordStack();
+    return;
+  }
+
   if (state.route !== "session" || !state.session || state.session.locked) return;
   const card = state.session.queue[state.session.index];
   if (!card) return;
@@ -797,6 +1114,7 @@ document.querySelectorAll(".bottom-nav button").forEach(button => {
 });
 
 $("today-review-only").addEventListener("click", () => startSession("review", buildReviewQueue(state.cards)));
+$("today-random-kanji").addEventListener("click", () => routeTo("random"));
 $("today-new-only").addEventListener("click", () => {
   const cards = state.cards
     .filter(card => card.progress.status === "new")
@@ -811,6 +1129,8 @@ $("today-new-only").addEventListener("click", () => {
   $(id).addEventListener("change", renderRandom);
 });
 
+$("words-next").addEventListener("click", () => advanceWordStack());
+$("words-shuffle").addEventListener("click", shuffleWords);
 $("random-next").addEventListener("click", renderRandom);
 $("refresh-button").addEventListener("click", () => loadCards(true));
 $("session-exit").addEventListener("click", () => {
