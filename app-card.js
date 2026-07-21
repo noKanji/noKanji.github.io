@@ -32,7 +32,8 @@ const state = {
     deck: [],
     index: 0,
     moving: false,
-    cycle: 0
+    cycle: 0,
+    viewed: 0
   }
 };
 
@@ -233,6 +234,7 @@ function initializeWordDeck() {
   state.words.index = 0;
   state.words.moving = false;
   state.words.cycle = 0;
+  state.words.viewed = 0;
 }
 
 function currentWord(offset = 0) {
@@ -302,6 +304,7 @@ function renderWords() {
   const stack = $("word-stack");
   const count = state.words.items.length;
   $("words-count").textContent = wordCountLabel(count);
+  $("words-viewed").textContent = `пролистано ${state.words.viewed}`;
 
   if (!count) {
     stack.replaceChildren(el("div", "empty-state word-empty", "В карточках пока нет примеров слов."));
@@ -370,6 +373,7 @@ function advanceWordStack(card = null, driftX = 0) {
   window.setTimeout(() => {
     const lastWord = currentWord(0);
     state.words.index += 1;
+    state.words.viewed += 1;
 
     if (state.words.index >= state.words.deck.length) {
       const lastKey = lastWord?.key;
@@ -466,6 +470,7 @@ function shuffleWords() {
   }
   state.words.index = 0;
   state.words.cycle += 1;
+  state.words.viewed = 0;
   renderWords();
   showToast("Стопка перемешана");
 }
