@@ -1158,3 +1158,31 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
   .word-card-main-medium { font-size: 3.7rem; }
   .word-card-main-long { font-size: 2.65rem; }
 }
+
+/* v14 — stronger one-line word counter */
+.words-counter {
+  flex-wrap: nowrap;
+  gap: 9px;
+  font-size: clamp(1.22rem, 5.25vw, 1.48rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -.015em;
+  white-space: nowrap;
+}
+.words-counter #words-count,
+.words-counter #words-viewed {
+  font-size: inherit;
+  font-weight: 900;
+}
+.words-counter #words-count { color: var(--green); }
+.words-counter #words-viewed { color: #a13f39; }
+.words-counter > span[aria-hidden="true"] {
+  color: #b9ae9c;
+  font-weight: 900;
+}
+@media (max-width: 365px) {
+  .words-counter {
+    gap: 6px;
+    font-size: 1.12rem;
+  }
+}
