@@ -963,3 +963,198 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
   }
 }
 \n\n/* v12 — compact word stack and larger typography */\n.words-counter {\n  display: inline-flex;\n  align-items: baseline;\n  flex-wrap: wrap;\n  gap: 5px;\n  color: var(--green-2);\n  font-weight: 700;\n}\n.words-counter #words-viewed { color: var(--muted); font-weight: 600; }\n.word-stack-stage {\n  min-height: clamp(280px, 39vh, 355px);\n  padding: 12px 0 18px;\n}\n.word-stack {\n  width: min(100%, 570px);\n  height: clamp(255px, 34vh, 320px);\n}\n.word-stack-card {\n  padding: clamp(16px, 4vw, 24px);\n  border-radius: clamp(23px, 5vw, 30px);\n  transform-origin: 50% 88%;\n}\n.word-card-content { padding: 7px 6px 12px; }\n.word-card-reading {\n  margin-bottom: 3px;\n  font-size: clamp(1.18rem, 5.2vw, 1.7rem);\n  line-height: 1.2;\n}\n.word-card-main {\n  font-size: clamp(5rem, 24vw, 9rem);\n  line-height: .98;\n}\n.word-card-main-medium { font-size: clamp(4.2rem, 19vw, 7.2rem); }\n.word-card-main-long { font-size: clamp(3rem, 13.5vw, 5.2rem); line-height: 1.05; }\n.word-card-translation {\n  margin-top: clamp(8px, 1.8vh, 14px);\n  font-size: clamp(1.15rem, 5vw, 1.65rem);\n  line-height: 1.22;\n}\n.word-card-footer {\n  min-height: 24px;\n  padding-top: 8px;\n  font-size: .62rem;\n}\n.word-up-mark { width: 25px; height: 25px; font-size: .9rem; }\n@media (max-height: 720px) {\n  .word-stack-stage { min-height: 260px; }\n  .word-stack { height: 245px; }\n  .word-card-main { font-size: clamp(4.6rem, 21vw, 7.5rem); }\n  .word-card-main-medium { font-size: clamp(3.8rem, 17vw, 6.3rem); }\n  .word-card-main-long { font-size: clamp(2.8rem, 12.5vw, 4.6rem); }\n}\n
+/* v13 — compact 240 px word stack, larger counter and navigation */
+.words-counter {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: clamp(1.02rem, 4.5vw, 1.22rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.words-counter #words-count {
+  color: var(--green);
+  font-weight: 800;
+}
+.words-counter #words-viewed {
+  color: #a0463f;
+  font-weight: 800;
+}
+.words-counter > span[aria-hidden="true"] {
+  color: var(--line);
+  font-weight: 700;
+}
+
+.word-stack-stage {
+  min-height: 260px;
+  padding: 10px 0;
+}
+.word-stack {
+  width: min(100%, 570px);
+  height: 240px;
+}
+.word-stack-card {
+  height: 240px;
+  padding: 14px 17px 12px;
+  border-radius: 25px;
+}
+.word-level-badge {
+  min-height: 28px;
+  padding: 5px 11px;
+  font-size: .76rem;
+}
+.word-lesson {
+  font-size: .76rem;
+  font-weight: 700;
+}
+.word-card-content {
+  padding: 2px 2px 5px;
+}
+.word-card-reading {
+  max-width: 100%;
+  margin-bottom: 2px;
+  font-size: clamp(1.35rem, 6vw, 1.72rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: .045em;
+  overflow-wrap: anywhere;
+}
+.word-card-main {
+  font-size: clamp(4.9rem, 22vw, 7.2rem);
+  line-height: .92;
+}
+.word-card-main-medium {
+  font-size: clamp(4rem, 18vw, 6rem);
+  line-height: .96;
+}
+.word-card-main-long {
+  font-size: clamp(2.9rem, 13vw, 4.5rem);
+  line-height: 1;
+}
+.word-card-translation {
+  max-width: 96%;
+  margin-top: 7px;
+  font-size: clamp(1.28rem, 5.7vw, 1.62rem);
+  font-weight: 700;
+  line-height: 1.12;
+}
+.word-card-footer {
+  min-height: 22px;
+  padding-top: 5px;
+  font-size: .62rem;
+}
+.word-up-mark {
+  width: 25px;
+  height: 25px;
+  font-size: .9rem;
+}
+
+.bottom-nav button {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.bottom-nav svg {
+  width: 31px;
+  height: 31px;
+  stroke-width: 2.35;
+}
+.bottom-nav small {
+  margin-top: 2px;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: -.015em;
+}
+.bottom-nav button.active small {
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  body.words-active {
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .words-active .topbar {
+    height: 82px;
+    padding-top: 10px;
+    padding-bottom: 9px;
+  }
+  .words-active main {
+    height: calc(100dvh - 82px - var(--nav-height) - env(safe-area-inset-bottom));
+    padding-top: 2px;
+    padding-bottom: 5px;
+    overflow: hidden;
+  }
+  .words-view.active {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .words-heading {
+    flex: 0 0 auto;
+    margin-bottom: 7px;
+  }
+  .words-heading h2 {
+    margin-top: 1px;
+    font-size: 2.18rem;
+    line-height: 1.05;
+  }
+  .words-heading .quiet-button {
+    min-height: 42px;
+    padding: 8px 14px;
+  }
+  .words-summary {
+    display: block;
+    flex: 0 0 auto;
+    margin-bottom: 1px;
+    font-size: .78rem;
+    line-height: 1.25;
+  }
+  .words-summary > span:last-child {
+    display: block;
+    margin-top: 4px;
+  }
+  .word-stack-stage {
+    display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 7px 0 5px;
+    place-items: center;
+  }
+  .word-stack {
+    height: 240px;
+  }
+  .word-stack-hint {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    font-size: .68rem;
+  }
+  .bottom-nav svg {
+    width: 31px;
+    height: 31px;
+  }
+  .bottom-nav small {
+    font-size: .73rem;
+  }
+}
+
+@media (max-height: 760px) and (max-width: 600px) {
+  .words-active .topbar { height: 74px; }
+  .words-active main {
+    height: calc(100dvh - 74px - var(--nav-height) - env(safe-area-inset-bottom));
+  }
+  .words-heading h2 { font-size: 1.95rem; }
+  .word-stack-hint { display: none; }
+}
+
+@media (max-width: 370px) {
+  .bottom-nav svg {
+    width: 28px;
+    height: 28px;
+  }
+  .bottom-nav small { font-size: .67rem; }
+  .word-card-main { font-size: 4.55rem; }
+  .word-card-main-medium { font-size: 3.7rem; }
+  .word-card-main-long { font-size: 2.65rem; }
+}
