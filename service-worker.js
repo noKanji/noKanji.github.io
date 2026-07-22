@@ -1,11 +1,12 @@
-/* Stable GitHub Pages release v16 */
+/* Stable GitHub Pages release v16.1 */
 importScripts("./config-live.js");
 
 const SHELL_CACHE = `${CONFIG.CACHE_VERSION}-shell`;
 const IMAGE_CACHE = `${CONFIG.CACHE_VERSION}-images`;
 const SHELL = [
-  "./", "./index.html", "./manifest.json", "./styles.css", "./premium-study.css", "./premium-fix.css",
-  "./config-live.js", "./app-card.js", "./premium-study.js", "./data.js", "./storage.js", "./scheduler.js",
+  "./", "./index.html", "./manifest.json", "./styles.css?v=161", "./premium-study.css", "./premium-fix.css?v=11",
+  "./config-live.js?v=161", "./app-card.js?v=161", "./premium-study.js?v=161",
+  "./data.js?v=161", "./storage.js?v=161", "./scheduler.js?v=161",
   "./icons/icon-48.png", "./icons/icon-72.png", "./icons/icon-96.png", "./icons/icon-128.png",
   "./icons/icon-144.png", "./icons/icon-152.png", "./icons/icon-180.png", "./icons/icon-192.png",
   "./icons/icon-384.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png"
@@ -36,6 +37,15 @@ self.addEventListener("fetch", event => {
       try { const response = await fetch(request); if (response.ok) await cache.put(request, response.clone()); return response; }
       catch { return new Response("", { status: 504, statusText: "Offline" }); }
     }));
+    return;
+  }
+  if (["script", "style", "worker"].includes(request.destination)) {
+    event.respondWith(fetch(request).then(response => {
+      if (response.ok && url.origin === self.location.origin) {
+        caches.open(SHELL_CACHE).then(cache => cache.put(request, response.clone()));
+      }
+      return response;
+    }).catch(() => caches.match(request)));
     return;
   }
   event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {

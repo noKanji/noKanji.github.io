@@ -11,7 +11,7 @@ import {
   saveSettings,
   getWordProgress,
   saveWordProgress
-} from "./storage.js";
+} from "./storage.js?v=161";
 import {
   scheduleReview,
   isDue,
@@ -19,8 +19,8 @@ import {
   isMastered,
   buildReviewQueue,
   RESULTS
-} from "./scheduler.js";
-import { normalizeCardData } from "./data.js";
+} from "./scheduler.js?v=161";
+import { normalizeCardData } from "./data.js?v=161";
 
 const state = {
   cards: [],

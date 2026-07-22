@@ -1,8 +1,9 @@
-import { defaultProgress } from "./scheduler.js";
+import { defaultProgress } from "./scheduler.js?v=161";
 
 const PROGRESS_KEY = "kanji-trainer-progress-v1";
 const DATA_CACHE_KEY = "kanji-trainer-data-cache-v1";
 const SETTINGS_KEY = "kanji-trainer-settings-v1";
+const WORD_PROGRESS_KEY = "kanji-trainer-word-progress-v1";
 
 const DEFAULT_SETTINGS = Object.freeze({
   dailyNewLimit: 10
@@ -52,8 +53,45 @@ export function toggleFavorite(id) {
   return saveProgress(progress);
 }
 
+export function defaultWordProgress(id) {
+  return {
+    id: String(id),
+    stage: 0,
+    status: "new",
+    successes: 0,
+    mistakes: 0,
+    lastResult: null,
+    lastReviewed: null,
+    nextReview: null,
+    masteredAt: null,
+    consolidatedAt: null
+  };
+}
+
+export function readAllWordProgress() {
+  const value = safeParse(localStorage.getItem(WORD_PROGRESS_KEY), {});
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+export function getWordProgress(id) {
+  const saved = readAllWordProgress()[id];
+  return {
+    ...defaultWordProgress(id),
+    ...(saved && typeof saved === "object" ? saved : {}),
+    id: String(id)
+  };
+}
+
+export function saveWordProgress(progress) {
+  const all = readAllWordProgress();
+  all[progress.id] = { ...defaultWordProgress(progress.id), ...progress, id: String(progress.id) };
+  localStorage.setItem(WORD_PROGRESS_KEY, JSON.stringify(all));
+  return all[progress.id];
+}
+
 export function clearProgress() {
   localStorage.removeItem(PROGRESS_KEY);
+  localStorage.removeItem(WORD_PROGRESS_KEY);
 }
 
 export function exportProgress() {
@@ -61,7 +99,8 @@ export function exportProgress() {
     version: 2,
     exportedAt: new Date().toISOString(),
     settings: readSettings(),
-    progress: readAllProgress()
+    progress: readAllProgress(),
+    wordProgress: readAllWordProgress()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
@@ -88,6 +127,15 @@ export async function importProgress(file) {
     clean[id] = progress;
   });
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(clean));
+
+  if (parsed?.wordProgress && typeof parsed.wordProgress === "object" && !Array.isArray(parsed.wordProgress)) {
+    const cleanWords = {};
+    Object.entries(parsed.wordProgress).forEach(([id, value]) => {
+      if (!id || !value || typeof value !== "object") return;
+      cleanWords[id] = { ...defaultWordProgress(id), ...value, id: String(id) };
+    });
+    localStorage.setItem(WORD_PROGRESS_KEY, JSON.stringify(cleanWords));
+  }
 
   if (parsed?.settings && typeof parsed.settings === "object") {
     saveSettings(parsed.settings);
