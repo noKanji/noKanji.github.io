@@ -962,7 +962,7 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
     transition-duration: .01ms !important;
   }
 }
-\n\n/* v12 — compact word stack and larger typography */\n.words-counter {\n  display: inline-flex;\n  align-items: baseline;\n  flex-wrap: wrap;\n  gap: 5px;\n  color: var(--green-2);\n  font-weight: 700;\n}\n.words-counter #words-viewed { color: var(--muted); font-weight: 600; }\n.word-stack-stage {\n  min-height: clamp(280px, 39vh, 355px);\n  padding: 12px 0 18px;\n}\n.word-stack {\n  width: min(100%, 570px);\n  height: clamp(255px, 34vh, 320px);\n}\n.word-stack-card {\n  padding: clamp(16px, 4vw, 24px);\n  border-radius: clamp(23px, 5vw, 30px);\n  transform-origin: 50% 88%;\n}\n.word-card-content { padding: 7px 6px 12px; }\n.word-card-reading {\n  margin-bottom: 3px;\n  font-size: clamp(1.18rem, 5.2vw, 1.7rem);\n  line-height: 1.2;\n}\n.word-card-main {\n  font-size: clamp(5rem, 24vw, 9rem);\n  line-height: .98;\n}\n.word-card-main-medium { font-size: clamp(4.2rem, 19vw, 7.2rem); }\n.word-card-main-long { font-size: clamp(3rem, 13.5vw, 5.2rem); line-height: 1.05; }\n.word-card-translation {\n  margin-top: clamp(8px, 1.8vh, 14px);\n  font-size: clamp(1.15rem, 5vw, 1.65rem);\n  line-height: 1.22;\n}\n.word-card-footer {\n  min-height: 24px;\n  padding-top: 8px;\n  font-size: .62rem;\n}\n.word-up-mark { width: 25px; height: 25px; font-size: .9rem; }\n@media (max-height: 720px) {\n  .word-stack-stage { min-height: 260px; }\n  .word-stack { height: 245px; }\n  .word-card-main { font-size: clamp(4.6rem, 21vw, 7.5rem); }\n  .word-card-main-medium { font-size: clamp(3.8rem, 17vw, 6.3rem); }\n  .word-card-main-long { font-size: clamp(2.8rem, 12.5vw, 4.6rem); }\n}\n
+\n\n/* v12 — compact word stack and larger typography */\n.words-counter {\n  display: inline-flex;\n  align-items: baseline;\n  flex-wrap: wrap;\n  gap: 5px;\n  color: var(--green-2);\n  font-weight: 700;\n}\n.words-counter #words-today { color: var(--muted); font-weight: 600; }\n.word-stack-stage {\n  min-height: clamp(280px, 39vh, 355px);\n  padding: 12px 0 18px;\n}\n.word-stack {\n  width: min(100%, 570px);\n  height: clamp(255px, 34vh, 320px);\n}\n.word-stack-card {\n  padding: clamp(16px, 4vw, 24px);\n  border-radius: clamp(23px, 5vw, 30px);\n  transform-origin: 50% 88%;\n}\n.word-card-content { padding: 7px 6px 12px; }\n.word-card-reading {\n  margin-bottom: 3px;\n  font-size: clamp(1.18rem, 5.2vw, 1.7rem);\n  line-height: 1.2;\n}\n.word-card-main {\n  font-size: clamp(5rem, 24vw, 9rem);\n  line-height: .98;\n}\n.word-card-main-medium { font-size: clamp(4.2rem, 19vw, 7.2rem); }\n.word-card-main-long { font-size: clamp(3rem, 13.5vw, 5.2rem); line-height: 1.05; }\n.word-card-translation {\n  margin-top: clamp(8px, 1.8vh, 14px);\n  font-size: clamp(1.15rem, 5vw, 1.65rem);\n  line-height: 1.22;\n}\n.word-card-footer {\n  min-height: 24px;\n  padding-top: 8px;\n  font-size: .62rem;\n}\n.word-up-mark { width: 25px; height: 25px; font-size: .9rem; }\n@media (max-height: 720px) {\n  .word-stack-stage { min-height: 260px; }\n  .word-stack { height: 245px; }\n  .word-card-main { font-size: clamp(4.6rem, 21vw, 7.5rem); }\n  .word-card-main-medium { font-size: clamp(3.8rem, 17vw, 6.3rem); }\n  .word-card-main-long { font-size: clamp(2.8rem, 12.5vw, 4.6rem); }\n}\n
 /* v13 — compact 240 px word stack, larger counter and navigation */
 .words-counter {
   display: flex;
@@ -977,7 +977,7 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
   color: var(--green);
   font-weight: 800;
 }
-.words-counter #words-viewed {
+.words-counter #words-today {
   color: #a0463f;
   font-weight: 800;
 }
@@ -1170,12 +1170,12 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
   white-space: nowrap;
 }
 .words-counter #words-count,
-.words-counter #words-viewed {
+.words-counter #words-today {
   font-size: inherit;
   font-weight: 900;
 }
 .words-counter #words-count { color: var(--green); }
-.words-counter #words-viewed { color: #a13f39; }
+.words-counter #words-today { color: #a13f39; }
 .words-counter > span[aria-hidden="true"] {
   color: #b9ae9c;
   font-weight: 900;
@@ -1185,4 +1185,65 @@ dialog::backdrop { background: rgba(18,28,24,.56); backdrop-filter: blur(2px); }
     gap: 6px;
     font-size: 1.12rem;
   }
+}
+
+/* v15 — word learning progress and two-way vertical swipes */
+.words-counter #words-mastered {
+  color: #9a742e;
+  font-size: inherit;
+  font-weight: 900;
+}
+.word-stack-card {
+  overflow: hidden;
+}
+.word-swipe-cue {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: clamp(.82rem, 3.5vw, 1rem);
+  font-weight: 900;
+  letter-spacing: .055em;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scale(.92);
+  transition: opacity .12s ease, transform .12s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+.word-swipe-repeat {
+  top: 14px;
+  color: #fff8f4;
+  background: rgba(146,55,49,.94);
+}
+.word-swipe-later {
+  bottom: 14px;
+  color: #f9fff9;
+  background: rgba(27,91,67,.94);
+}
+.word-stack-card[data-swipe-direction="repeat"] .word-swipe-repeat,
+.word-stack-card[data-swipe-direction="later"] .word-swipe-later {
+  opacity: calc(.25 + var(--word-progress, 0) * .75);
+  transform: translateX(-50%) scale(1);
+}
+.word-stack-stage[data-direction="repeat"] .word-stack-card[data-depth="1"],
+.word-stack-stage[data-direction="later"] .word-stack-card[data-depth="1"] {
+  filter: saturate(1.03);
+}
+@media (max-width: 600px) {
+  .words-counter {
+    gap: 6px;
+    font-size: clamp(.98rem, 4.25vw, 1.2rem);
+  }
+  .words-summary > span:last-child {
+    font-weight: 700;
+  }
+}
+
+
+/* v16 — useful daily word counter */
+.words-counter #words-today {
+  color: #a13f39;
+  font-size: inherit;
+  font-weight: 900;
 }

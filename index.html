@@ -121,15 +121,15 @@
     <section id="words-view" class="view words-view" aria-labelledby="words-title">
       <div class="section-heading words-heading">
         <div>
-          <p class="eyebrow">Быстрый просмотр</p>
+          <p class="eyebrow">Повторение слов</p>
           <h2 id="words-title">Слова</h2>
         </div>
         <button id="words-shuffle" class="quiet-button" type="button">Перемешать</button>
       </div>
 
       <div class="words-summary">
-        <div class="words-counter"><span id="words-count">0 слов</span><span aria-hidden="true">·</span><span id="words-viewed">пролистано 0</span></div>
-        <span>Бесконечная стопка · смахивайте вверх</span>
+        <div class="words-counter"><span id="words-count">0 слов</span><span aria-hidden="true">·</span><span id="words-mastered">выучено 0</span><span aria-hidden="true">·</span><span id="words-today">сегодня 0</span></div>
+        <span>Вниз — повторить · вверх — позже</span>
       </div>
 
       <div id="word-stack-stage" class="word-stack-stage" aria-live="polite">
@@ -137,9 +137,9 @@
       </div>
 
       <button id="words-next" class="word-next-button" type="button" aria-label="Показать следующее слово">
-        Следующее слово <span aria-hidden="true">↑</span>
+        Повторить позже <span aria-hidden="true">↑</span>
       </button>
-      <p class="word-stack-hint">Потяните верхнюю карточку вверх — следующая поднимется из стопки.</p>
+      <p class="word-stack-hint">Свайп вниз вернёт слово через 20–30 карточек, вверх — перенесёт на следующий этап.</p>
     </section>
 
     <section id="random-view" class="view" aria-labelledby="random-title">

@@ -8,7 +8,9 @@ import {
   cacheLearningData,
   readCachedLearningData,
   readSettings,
-  saveSettings
+  saveSettings,
+  getWordProgress,
+  saveWordProgress
 } from "./storage.js";
 import {
   scheduleReview,
@@ -33,7 +35,7 @@ const state = {
     index: 0,
     moving: false,
     cycle: 0,
-    viewed: 0
+    pendingInsertions: []
   }
 };
 
@@ -214,7 +216,8 @@ function buildWordItems(cards) {
     ...word,
     lessons: [...word.lessons],
     jlpt: [...word.jlpt],
-    sources: [...word.sources]
+    sources: [...word.sources],
+    progress: getWordProgress(word.key)
   }));
 }
 
@@ -227,20 +230,128 @@ function shuffled(items) {
   return result;
 }
 
+function wordIsDue(word, now = new Date()) {
+  const stage = Number(word?.progress?.stage || 0);
+  if (stage <= 0 || stage >= 6) return false;
+  const next = word?.progress?.nextReview;
+  if (!next) return stage === 1;
+  const timestamp = Date.parse(next);
+  return Number.isFinite(timestamp) && timestamp <= now.getTime();
+}
+
+function wordsDueTodayCount(now = new Date()) {
+  return state.words.items.filter(word => wordIsDue(word, now)).length;
+}
+
+function buildWordDeck(items, previousKey = null) {
+  const now = new Date();
+  const due = shuffled(items.filter(word => wordIsDue(word, now)));
+  const later = shuffled(items.filter(word => !wordIsDue(word, now)));
+  const deck = [...due, ...later];
+  if (deck.length > 1 && deck[0]?.key === previousKey) {
+    [deck[0], deck[1]] = [deck[1], deck[0]];
+  }
+  return deck;
+}
+
 function initializeWordDeck() {
   const items = buildWordItems(state.cards);
   state.words.items = items;
-  state.words.deck = shuffled(items);
+  state.words.deck = buildWordDeck(items);
   state.words.index = 0;
   state.words.moving = false;
   state.words.cycle = 0;
-  state.words.viewed = 0;
+  state.words.pendingInsertions = [];
 }
 
 function currentWord(offset = 0) {
   const deck = state.words.deck;
   if (!deck.length) return null;
-  return deck[(state.words.index + offset) % deck.length];
+  return deck[state.words.index + offset] || null;
+}
+
+function randomRepeatDistance() {
+  return 20 + Math.floor(Math.random() * 11);
+}
+
+function insertWordLater(word, distance = randomRepeatDistance()) {
+  if (!word || !state.words.deck.length) return;
+  const insertionIndex = Math.min(state.words.deck.length, state.words.index + 1 + distance);
+  state.words.deck.splice(insertionIndex, 0, word);
+}
+
+function masteredWordCount() {
+  return state.words.items.filter(word => Number(word.progress?.stage || 0) >= 5).length;
+}
+
+function addDays(date, days) {
+  return new Date(date.getTime() + days * 86_400_000);
+}
+
+function applyWordResult(word, result, now = new Date()) {
+  const current = { ...getWordProgress(word.key), ...(word.progress || {}) };
+  const next = {
+    ...current,
+    lastResult: result,
+    lastReviewed: now.toISOString()
+  };
+
+  const nextTimestamp = current.nextReview ? Date.parse(current.nextReview) : null;
+  const isScheduledForFuture = Number.isFinite(nextTimestamp) && nextTimestamp > now.getTime();
+
+  if (result === "later" && isScheduledForFuture) {
+    return current;
+  }
+
+  if (result === "repeat") {
+    next.mistakes = Number(current.mistakes || 0) + 1;
+    next.successes = 0;
+    next.stage = Math.max(0, Number(current.stage || 0) - 1);
+    next.status = next.stage >= 5 ? "mastered" : next.stage > 0 ? "learning" : "new";
+    next.nextReview = now.toISOString();
+    next.masteredAt = next.stage >= 5 ? current.masteredAt : null;
+    next.consolidatedAt = next.stage >= 6 ? current.consolidatedAt : null;
+    insertWordLater(word);
+  } else {
+    const stage = Number(current.stage || 0);
+    next.successes = Number(current.successes || 0) + 1;
+
+    if (stage <= 0) {
+      next.stage = 1;
+      next.status = "learning";
+      next.nextReview = now.toISOString();
+      insertWordLater(word);
+    } else if (stage === 1) {
+      next.stage = 2;
+      next.status = "learning";
+      next.nextReview = addDays(now, 1).toISOString();
+    } else if (stage === 2) {
+      next.stage = 3;
+      next.status = "learning";
+      next.nextReview = addDays(now, 3).toISOString();
+    } else if (stage === 3) {
+      next.stage = 4;
+      next.status = "learning";
+      next.nextReview = addDays(now, 7).toISOString();
+    } else if (stage === 4) {
+      next.stage = 5;
+      next.status = "mastered";
+      next.masteredAt = now.toISOString();
+      next.nextReview = addDays(now, 14).toISOString();
+    } else if (stage === 5) {
+      next.stage = 6;
+      next.status = "consolidated";
+      next.consolidatedAt = now.toISOString();
+      next.nextReview = null;
+    } else {
+      next.stage = 6;
+      next.status = "consolidated";
+      next.nextReview = null;
+    }
+  }
+
+  word.progress = saveWordProgress(next);
+  return word.progress;
 }
 
 function wordCountLabel(count) {
@@ -293,18 +404,31 @@ function createWordStackCard(word, depth) {
   const source = word.sources.slice(0, 3).join(" · ");
   footer.append(
     el("span", "", source ? `Кандзи: ${source}` : "Из словаря карточек"),
-    el("span", "word-up-mark", "↑")
+    el("span", "word-up-mark", "↕")
   );
   card.append(footer);
+
+  const repeatCue = el("span", "word-swipe-cue word-swipe-repeat", "↓ ПОВТОРИТЬ");
+  const laterCue = el("span", "word-swipe-cue word-swipe-later", "↑ ПОЗЖЕ");
+  card.append(repeatCue, laterCue);
 
   return card;
 }
 
+function ensureWordDeckAhead(minimum = 3) {
+  const remaining = state.words.deck.length - state.words.index;
+  if (remaining >= minimum || !state.words.items.length) return;
+  const previousKey = state.words.deck.at(-1)?.key || null;
+  state.words.deck.push(...buildWordDeck(state.words.items, previousKey));
+}
+
 function renderWords() {
+  ensureWordDeckAhead(3);
   const stack = $("word-stack");
   const count = state.words.items.length;
   $("words-count").textContent = wordCountLabel(count);
-  $("words-viewed").textContent = `пролистано ${state.words.viewed}`;
+  $("words-mastered").textContent = `выучено ${masteredWordCount()}`;
+  $("words-today").textContent = `сегодня ${wordsDueTodayCount()}`;
 
   if (!count) {
     stack.replaceChildren(el("div", "empty-state word-empty", "В карточках пока нет примеров слов."));
@@ -341,54 +465,53 @@ function resetWordDrag(card) {
   card.style.transform = "";
   card.style.opacity = "";
   card.classList.remove("dragging");
+  delete card.dataset.swipeDirection;
   stage.style.setProperty("--word-progress", "0");
   window.setTimeout(() => {
     if (card.isConnected) card.style.transition = "";
   }, reducedMotion() ? 0 : 360);
 }
 
-function advanceWordStack(card = null, driftX = 0) {
+function advanceWordStack(card = null, driftX = 0, direction = "later") {
   if (state.words.moving || !state.words.deck.length) return;
   state.words.moving = true;
 
   const stage = $("word-stack-stage");
   const activeCard = card || $("word-stack").querySelector('.word-stack-card[data-depth="0"]');
+  const activeWord = currentWord(0);
+  if (activeWord) applyWordResult(activeWord, direction === "repeat" ? "repeat" : "later");
+
   stage.classList.add("advancing");
+  stage.dataset.direction = direction;
   stage.style.setProperty("--word-progress", "1");
 
   if (activeCard) {
     const exitX = Math.max(-70, Math.min(70, driftX * 1.35));
     const rotation = Math.max(-7, Math.min(7, driftX / 14));
+    const exitY = direction === "repeat" ? "115vh" : "-115vh";
     activeCard.classList.remove("dragging");
     activeCard.style.transition = reducedMotion()
       ? "none"
       : "transform .34s cubic-bezier(.32,.02,.2,1), opacity .26s ease";
     requestAnimationFrame(() => {
-      activeCard.style.transform = `translate3d(${exitX}px, -115vh, 0) rotate(${rotation}deg) scale(.97)`;
+      activeCard.style.transform = `translate3d(${exitX}px, ${exitY}, 0) rotate(${rotation}deg) scale(.97)`;
       activeCard.style.opacity = "0";
     });
   }
 
   const delay = reducedMotion() ? 20 : 330;
   window.setTimeout(() => {
-    const lastWord = currentWord(0);
+    const lastKey = activeWord?.key;
     state.words.index += 1;
-    state.words.viewed += 1;
 
     if (state.words.index >= state.words.deck.length) {
-      const lastKey = lastWord?.key;
-      state.words.deck = shuffled(state.words.items);
-      if (
-        state.words.deck.length > 1 &&
-        state.words.deck[0]?.key === lastKey
-      ) {
-        [state.words.deck[0], state.words.deck[1]] = [state.words.deck[1], state.words.deck[0]];
-      }
+      state.words.deck = buildWordDeck(state.words.items, lastKey);
       state.words.index = 0;
       state.words.cycle += 1;
     }
 
     state.words.moving = false;
+    delete stage.dataset.direction;
     if (state.route === "words") renderWords();
   }, delay);
 }
@@ -429,13 +552,12 @@ function attachWordStackSwipe(card) {
 
     event.preventDefault();
     deltaX = Math.max(-42, Math.min(42, rawX * .22));
-    deltaY = rawY < 0
-      ? Math.max(-280, rawY)
-      : Math.min(42, rawY * .24);
+    deltaY = Math.max(-280, Math.min(280, rawY));
 
-    const progress = Math.max(0, Math.min(1, -deltaY / 150));
+    const progress = Math.max(0, Math.min(1, Math.abs(deltaY) / 150));
     const rotation = deltaX / 18;
     const scale = 1 - progress * .025;
+    card.dataset.swipeDirection = deltaY >= 0 ? "repeat" : "later";
     card.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) rotate(${rotation}deg) scale(${scale})`;
     card.style.opacity = String(1 - progress * .12);
     $("word-stack-stage").style.setProperty("--word-progress", String(progress));
@@ -448,11 +570,13 @@ function attachWordStackSwipe(card) {
 
     const elapsed = Math.max(1, performance.now() - startTime);
     const velocityY = deltaY / elapsed;
-    const shouldAdvance = vertical && (deltaY <= -76 || velocityY <= -.48);
+    const direction = deltaY >= 0 ? "repeat" : "later";
+    const shouldAdvance = vertical && (Math.abs(deltaY) >= 76 || Math.abs(velocityY) >= .48);
 
     if (shouldAdvance) {
-      advanceWordStack(card, deltaX);
+      advanceWordStack(card, deltaX, direction);
     } else {
+      delete card.dataset.swipeDirection;
       resetWordDrag(card);
     }
   };
@@ -464,13 +588,12 @@ function attachWordStackSwipe(card) {
 function shuffleWords() {
   if (state.words.items.length < 2 || state.words.moving) return;
   const currentKey = currentWord(0)?.key;
-  state.words.deck = shuffled(state.words.items);
+  state.words.deck = buildWordDeck(state.words.items, currentKey);
   if (state.words.deck[0]?.key === currentKey) {
     [state.words.deck[0], state.words.deck[1]] = [state.words.deck[1], state.words.deck[0]];
   }
   state.words.index = 0;
   state.words.cycle += 1;
-  state.words.viewed = 0;
   renderWords();
   showToast("Стопка перемешана");
 }
@@ -1087,14 +1210,17 @@ function handleKeyboard(event) {
   const interactiveTarget = event.target instanceof Element &&
     event.target.closest("input, select, textarea, button, dialog");
 
-  if (
-    state.route === "words" &&
-    !interactiveTarget &&
-    (event.key === "ArrowUp" || event.key === " " || event.key === "Enter")
-  ) {
-    event.preventDefault();
-    advanceWordStack();
-    return;
+  if (state.route === "words" && !interactiveTarget) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      advanceWordStack(null, 0, "repeat");
+      return;
+    }
+    if (event.key === "ArrowUp" || event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      advanceWordStack(null, 0, "later");
+      return;
+    }
   }
 
   if (state.route !== "session" || !state.session || state.session.locked) return;
@@ -1188,7 +1314,9 @@ $("clear-button").addEventListener("click", () => {
   if (!confirm("Удалить весь локальный прогресс? Это действие нельзя отменить.")) return;
   clearProgress();
   state.cards.forEach(card => { card.progress = getProgress(card.id); });
+  initializeWordDeck();
   renderToday();
+  if (state.route === "words") renderWords();
   $("settings-message").textContent = "Прогресс очищен.";
 });
 
