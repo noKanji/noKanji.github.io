@@ -621,7 +621,7 @@ function renderSession() {
   content.replaceChildren(cardNode, swipeNote, actions);
 
   if (readSettings().autoAudio && card.type === "word") {
-    setTimeout(() => speakJapanese(card.audio.word || card.reading || card.japanese), 180);
+    setTimeout(() => speakJapanese(card.audio.wordUrl), 180);
   }
 }
 
@@ -816,23 +816,8 @@ function speakJapanese(source, button = null) {
     return;
   }
 
-  // Запасной вариант для карточек, у которых MP3 ещё не загружен.
-  if (!("speechSynthesis" in window)) {
-    showToast("Для этой карточки аудио пока не добавлено.");
-    return;
-  }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(value);
-  utterance.lang = "ja-JP";
-  utterance.rate = 0.86;
-  utterance.pitch = 1;
-  const japaneseVoice = state.voices.find(voice => /^ja(-|_)/i.test(voice.lang));
-  if (japaneseVoice) utterance.voice = japaneseVoice;
-  if (button) {
-    button.classList.add("speaking");
-    utterance.onend = utterance.onerror = () => button.classList.remove("speaking");
-  }
-  speechSynthesis.speak(utterance);
+  // Роботизированный голос браузера отключён: воспроизводим только оригинальные MP3.
+  showToast("Для этой карточки оригинальный MP3 пока не привязан.");
 }
 
 function formatDate(value) {
