@@ -64,6 +64,14 @@ function normalizeKanji(source) {
   return item;
 }
 
+function audioFileUrl(fileName) {
+  const raw = clean(fileName);
+  if (!raw) return "";
+  if (/^(?:https?:)?\/\//i.test(raw) || raw.startsWith("./") || raw.startsWith("/")) return raw;
+  const withoutFolder = raw.replace(/^genki_audio[\/\\]/i, "");
+  return `./genki_audio/${withoutFolder.split(/[\/\\]/).map(encodeURIComponent).join("/")}`;
+}
+
 function normalizeWord(source) {
   const id = clean(source?.id);
   const japanese = clean(source?.japanese);
@@ -81,21 +89,25 @@ function normalizeWord(source) {
     exampleRu: clean(source.example_ru),
     lesson: clean(source.lesson),
     jlpt: clean(source.jlpt),
-    audio: source?.audio && typeof source.audio === "object" ? source.audio : {
-      language: "ja-JP",
-      word: clean(source.tts_word || source.reading || source.japanese),
-      example: clean(source.tts_example || source.example_reading || source.example_jp),
-      wordFile: clean(source.audio_word_source),
-      exampleFile: clean(source.audio_sentence_source)
-    }
+    audio: {}
   };
-  item.audio.wordUrl = item.audio.wordFile
-  ? `./genki_audio/${encodeURIComponent(item.audio.wordFile)}`
-  : "";
 
-item.audio.exampleUrl = item.audio.exampleFile
-  ? `./genki_audio/${encodeURIComponent(item.audio.exampleFile)}`
-  : "";
+  // Объединяем аудиоданные из ответа Apps Script и из исходных колонок таблицы.
+  // Это важно: в разных версиях API имя MP3 могло приходить либо внутри audio,
+  // либо как отдельное поле audio_word_source / audio_sentence_source.
+  const sourceAudio = source?.audio && typeof source.audio === "object" ? source.audio : {};
+  item.audio = {
+    language: clean(sourceAudio.language) || "ja-JP",
+    word: clean(sourceAudio.word || source.tts_word || source.reading || source.japanese),
+    example: clean(sourceAudio.example || source.tts_example || source.example_reading || source.example_jp),
+    wordFile: clean(sourceAudio.wordFile || sourceAudio.word_file || source.audio_word_source || source.audio_word_file),
+    exampleFile: clean(sourceAudio.exampleFile || sourceAudio.example_file || source.audio_sentence_source || source.audio_sentence_file),
+    wordUrl: clean(sourceAudio.wordUrl || sourceAudio.word_url),
+    exampleUrl: clean(sourceAudio.exampleUrl || sourceAudio.example_url)
+  };
+
+  item.audio.wordUrl = item.audio.wordUrl || audioFileUrl(item.audio.wordFile);
+  item.audio.exampleUrl = item.audio.exampleUrl || audioFileUrl(item.audio.exampleFile);
   item.progress = getProgress(item.storageId);
   return item;
 }
