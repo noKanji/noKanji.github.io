@@ -84,9 +84,13 @@ function normalizeWord(source) {
     audio: source?.audio && typeof source.audio === "object" ? source.audio : {
       language: "ja-JP",
       word: clean(source.tts_word || source.reading || source.japanese),
-      example: clean(source.tts_example || source.example_reading || source.example_jp)
+      example: clean(source.tts_example || source.example_reading || source.example_jp),
+      wordFile: clean(source.audio_word_source),
+      exampleFile: clean(source.audio_sentence_source)
     }
   };
+  item.audio.wordUrl = item.audio.wordFile ? `audio/words/${encodeURIComponent(item.audio.wordFile)}` : "";
+  item.audio.exampleUrl = item.audio.exampleFile ? `audio/examples/${encodeURIComponent(item.audio.exampleFile)}` : "";
   item.progress = getProgress(item.storageId);
   return item;
 }
@@ -321,7 +325,7 @@ function createWordMiniCard(card) {
   const top = el("div", "word-mini-top");
   const dot = el("span", `status-dot ${status}`);
   dot.title = label;
-  const audio = createAudioButton(card.audio.word || card.reading || card.japanese, "Озвучить слово", "small-audio");
+  const audio = createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "small-audio");
   audio.addEventListener("click", event => event.stopPropagation());
   top.append(dot, audio);
   button.append(top, el("span", "mini-word", card.japanese));
@@ -488,7 +492,7 @@ function createKanjiFullCard(card, { interactive = true, session = false } = {})
 function createWordFullCard(card, { interactive = true, session = false } = {}) {
   const root = el("article", `full-card word-full-card${session ? " session-card" : ""}`);
   const hero = el("header", "word-hero swipe-handle");
-  const audio = createAudioButton(card.audio.word || card.reading || card.japanese, "Озвучить слово", "hero-audio");
+  const audio = createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "hero-audio");
   hero.append(audio, el("div", "word-glyph", card.japanese));
   if (card.reading && card.reading !== card.japanese) hero.append(el("span", "word-reading", card.reading));
   hero.append(el("h3", "", card.meaning || "Без перевода"));
@@ -498,7 +502,7 @@ function createWordFullCard(card, { interactive = true, session = false } = {}) 
   if (card.exampleJp) {
     const section = el("section", "card-section example-card-section");
     const heading = el("div", "section-title-row");
-    heading.append(el("h4", "", "Пример"), createAudioButton(card.audio.example || card.exampleReading || card.exampleJp, "Озвучить пример", "small-audio"));
+    heading.append(el("h4", "", "Пример"), createAudioButton(card.audio.exampleUrl || card.audio.example || card.exampleReading || card.exampleJp, "Озвучить пример", "small-audio"));
     section.append(heading, el("p", "example-jp", card.exampleJp));
     if (card.exampleReading && card.exampleReading !== card.exampleJp) section.append(el("p", "example-reading", card.exampleReading));
     if (card.exampleRu) section.append(el("p", "example-ru", card.exampleRu));
@@ -587,7 +591,7 @@ function renderSession() {
     const label = el("span", "prompt-label", card.type === "word" ? formatLesson(card.lesson) : "Кандзи");
     const glyph = el("div", card.type === "word" ? "study-word" : "study-kanji", card.type === "word" ? card.japanese : card.kanji);
     prompt.append(label, glyph);
-    if (card.type === "word") prompt.append(createAudioButton(card.audio.word || card.reading || card.japanese, "Озвучить слово", "prompt-audio"));
+    if (card.type === "word") prompt.append(createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "prompt-audio"));
     prompt.append(el("p", "", card.type === "word" ? "Вспомните чтение и перевод" : "Назовите значение и чтение"));
     const reveal = el("button", "primary-button reveal-button", "Показать ответ");
     reveal.type = "button";
@@ -774,14 +778,46 @@ function loadVoices() {
   state.voices = speechSynthesis.getVoices();
 }
 
-function speakJapanese(text, button = null) {
-  if (!has(text)) return;
+let currentAudio = null;
+
+function speakJapanese(source, button = null) {
+  if (!has(source)) return;
+  const value = clean(source);
+
+  if (/\.mp3(?:$|\?)/i.test(value)) {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+
+    const audio = new Audio(value);
+    currentAudio = audio;
+    audio.preload = "auto";
+    if (button) button.classList.add("speaking");
+    const finish = () => {
+      if (button) button.classList.remove("speaking");
+      if (currentAudio === audio) currentAudio = null;
+    };
+    audio.onended = finish;
+    audio.onerror = () => {
+      finish();
+      showToast("MP3 пока не найден в папке audio.");
+    };
+    audio.play().catch(() => {
+      finish();
+      showToast("Не удалось воспроизвести MP3.");
+    });
+    return;
+  }
+
+  // Запасной вариант для карточек, у которых MP3 ещё не загружен.
   if (!("speechSynthesis" in window)) {
-    showToast("Озвучивание не поддерживается этим браузером.");
+    showToast("Для этой карточки аудио пока не добавлено.");
     return;
   }
   speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(clean(text));
+  const utterance = new SpeechSynthesisUtterance(value);
   utterance.lang = "ja-JP";
   utterance.rate = 0.86;
   utterance.pitch = 1;

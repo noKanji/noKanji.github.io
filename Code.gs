@@ -95,7 +95,6 @@ function readActiveItems(spreadsheet, sheetName, addWordAudio) {
 
       headers.forEach(function(header, index) {
         if (!header) return;
-        if (header === 'audio_word_source' || header === 'audio_sentence_source') return;
         item[header] = serializeValue(row[index]);
       });
 
@@ -104,13 +103,15 @@ function readActiveItems(spreadsheet, sheetName, addWordAudio) {
         const exampleAudioText = String(item.tts_example || item.example_reading || item.example_jp || '').trim();
 
         item.audio = {
-          mode: 'speechSynthesis',
+          mode: 'mp3',
           language: 'ja-JP',
           word: wordAudioText,
           example: exampleAudioText,
+          wordFile: String(item.audio_word_source || '').trim(),
+          exampleFile: String(item.audio_sentence_source || '').trim(),
         };
-        item.hasAudio = Boolean(wordAudioText);
-        item.hasExampleAudio = Boolean(exampleAudioText);
+        item.hasAudio = Boolean(item.audio.wordFile);
+        item.hasExampleAudio = Boolean(item.audio.exampleFile);
         delete item.tts_word;
         delete item.tts_example;
       }
