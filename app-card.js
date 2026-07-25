@@ -90,11 +90,11 @@ function normalizeWord(source) {
     }
   };
   item.audio.wordUrl = item.audio.wordFile
-  ? `genki_audio/${encodeURIComponent(item.audio.wordFile)}`
+  ? `./genki_audio/${encodeURIComponent(item.audio.wordFile)}`
   : "";
 
 item.audio.exampleUrl = item.audio.exampleFile
-  ? `genki_audio/${encodeURIComponent(item.audio.exampleFile)}`
+  ? `./genki_audio/${encodeURIComponent(item.audio.exampleFile)}`
   : "";
   item.progress = getProgress(item.storageId);
   return item;
