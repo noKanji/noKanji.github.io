@@ -1,4 +1,4 @@
-/* Kanji + Words GitHub Pages release v10 */
+/* Kanji + Words GitHub Pages release v13 */
 importScripts("./config-live.js");
 
 const SHELL_CACHE = `${CONFIG.CACHE_VERSION}-shell`;

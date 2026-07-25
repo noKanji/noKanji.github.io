@@ -20,8 +20,7 @@ const state = {
   route: "today",
   session: null,
   randomId: null,
-  usingCache: false,
-  voices: []
+  usingCache: false
 };
 
 const $ = id => document.getElementById(id);
@@ -76,6 +75,17 @@ function normalizeWord(source) {
   const id = clean(source?.id);
   const japanese = clean(source?.japanese);
   if (!id || !japanese) return null;
+
+  const sourceAudio = source?.audio && typeof source.audio === "object" ? source.audio : {};
+  const wordFile = clean(
+    sourceAudio.wordFile || sourceAudio.word_file ||
+    source.audio_word_source || source.audio_word_file
+  );
+  const exampleFile = clean(
+    sourceAudio.exampleFile || sourceAudio.example_file ||
+    source.audio_sentence_source || source.audio_sentence_file
+  );
+
   const item = {
     type: "word",
     id,
@@ -89,25 +99,14 @@ function normalizeWord(source) {
     exampleRu: clean(source.example_ru),
     lesson: clean(source.lesson),
     jlpt: clean(source.jlpt),
-    audio: {}
+    audio: {
+      language: clean(sourceAudio.language) || "ja-JP",
+      wordFile,
+      exampleFile,
+      wordUrl: clean(sourceAudio.wordUrl || sourceAudio.word_url) || audioFileUrl(wordFile),
+      exampleUrl: clean(sourceAudio.exampleUrl || sourceAudio.example_url) || audioFileUrl(exampleFile)
+    }
   };
-
-  // Объединяем аудиоданные из ответа Apps Script и из исходных колонок таблицы.
-  // Это важно: в разных версиях API имя MP3 могло приходить либо внутри audio,
-  // либо как отдельное поле audio_word_source / audio_sentence_source.
-  const sourceAudio = source?.audio && typeof source.audio === "object" ? source.audio : {};
-  item.audio = {
-    language: clean(sourceAudio.language) || "ja-JP",
-    word: clean(sourceAudio.word || source.tts_word || source.reading || source.japanese),
-    example: clean(sourceAudio.example || source.tts_example || source.example_reading || source.example_jp),
-    wordFile: clean(sourceAudio.wordFile || sourceAudio.word_file || source.audio_word_source || source.audio_word_file),
-    exampleFile: clean(sourceAudio.exampleFile || sourceAudio.example_file || source.audio_sentence_source || source.audio_sentence_file),
-    wordUrl: clean(sourceAudio.wordUrl || sourceAudio.word_url),
-    exampleUrl: clean(sourceAudio.exampleUrl || sourceAudio.example_url)
-  };
-
-  item.audio.wordUrl = item.audio.wordUrl || audioFileUrl(item.audio.wordFile);
-  item.audio.exampleUrl = item.audio.exampleUrl || audioFileUrl(item.audio.exampleFile);
   item.progress = getProgress(item.storageId);
   return item;
 }
@@ -342,7 +341,7 @@ function createWordMiniCard(card) {
   const top = el("div", "word-mini-top");
   const dot = el("span", `status-dot ${status}`);
   dot.title = label;
-  const audio = createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "small-audio");
+  const audio = createAudioButton(card.audio.wordUrl, "Озвучить слово", "small-audio");
   audio.addEventListener("click", event => event.stopPropagation());
   top.append(dot, audio);
   button.append(top, el("span", "mini-word", card.japanese));
@@ -509,7 +508,7 @@ function createKanjiFullCard(card, { interactive = true, session = false } = {})
 function createWordFullCard(card, { interactive = true, session = false } = {}) {
   const root = el("article", `full-card word-full-card${session ? " session-card" : ""}`);
   const hero = el("header", "word-hero swipe-handle");
-  const audio = createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "hero-audio");
+  const audio = createAudioButton(card.audio.wordUrl, "Озвучить слово", "hero-audio");
   hero.append(audio, el("div", "word-glyph", card.japanese));
   if (card.reading && card.reading !== card.japanese) hero.append(el("span", "word-reading", card.reading));
   hero.append(el("h3", "", card.meaning || "Без перевода"));
@@ -608,7 +607,7 @@ function renderSession() {
     const label = el("span", "prompt-label", card.type === "word" ? formatLesson(card.lesson) : "Кандзи");
     const glyph = el("div", card.type === "word" ? "study-word" : "study-kanji", card.type === "word" ? card.japanese : card.kanji);
     prompt.append(label, glyph);
-    if (card.type === "word") prompt.append(createAudioButton(card.audio.wordUrl || card.audio.word || card.reading || card.japanese, "Озвучить слово", "prompt-audio"));
+    if (card.type === "word") prompt.append(createAudioButton(card.audio.wordUrl, "Озвучить слово", "prompt-audio"));
     prompt.append(el("p", "", card.type === "word" ? "Вспомните чтение и перевод" : "Назовите значение и чтение"));
     const reveal = el("button", "primary-button reveal-button", "Показать ответ");
     reveal.type = "button";
@@ -632,7 +631,7 @@ function renderSession() {
   const swipeNote = el("p", "swipe-note", "На карточке: вниз — повторить, вверх — повторить позже");
   content.replaceChildren(cardNode, swipeNote, actions);
 
-  if (readSettings().autoAudio && card.type === "word") {
+  if (readSettings().autoAudio && card.type === "word" && has(card.audio.wordUrl)) {
     setTimeout(() => speakJapanese(card.audio.wordUrl), 180);
   }
 }
@@ -790,48 +789,38 @@ function createAudioButton(text, label, className = "audio-button") {
   return button;
 }
 
-function loadVoices() {
-  if (!("speechSynthesis" in window)) return;
-  state.voices = speechSynthesis.getVoices();
-}
 
 let currentAudio = null;
 
 function speakJapanese(source, button = null) {
-  if (!has(source)) return;
   const value = clean(source);
+  if (!/\.mp3(?:$|[?#])/i.test(value)) return;
 
-  if (/\.mp3(?:$|\?)/i.test(value)) {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
-    if ("speechSynthesis" in window) speechSynthesis.cancel();
-
-    const audio = new Audio(value);
-    currentAudio = audio;
-    audio.preload = "auto";
-    if (button) button.classList.add("speaking");
-    const finish = () => {
-      if (button) button.classList.remove("speaking");
-      if (currentAudio === audio) currentAudio = null;
-    };
-    audio.onended = finish;
-    audio.onerror = () => {
-      finish();
-      showToast("MP3 не найден в папке genki_audio.");
-    };
-    audio.play().catch(() => {
-      finish();
-      showToast("Не удалось воспроизвести MP3.");
-    });
-    return;
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
   }
 
-  // Роботизированный голос браузера отключён: воспроизводим только оригинальные MP3.
-  showToast("Для этой карточки оригинальный MP3 пока не привязан.");
-}
+  const audio = new Audio(value);
+  currentAudio = audio;
+  audio.preload = "auto";
+  if (button) button.classList.add("speaking");
 
+  const finish = () => {
+    if (button) button.classList.remove("speaking");
+    if (currentAudio === audio) currentAudio = null;
+  };
+
+  audio.onended = finish;
+  audio.onerror = () => {
+    finish();
+    showToast("MP3-файл не найден в папке genki_audio.");
+  };
+  audio.play().catch(() => {
+    finish();
+    showToast("Не удалось воспроизвести MP3.");
+  });
+}
 function formatDate(value) {
   if (!value) return "не назначено";
   const date = new Date(value);
@@ -918,10 +907,6 @@ document.addEventListener("keydown", event => {
 
 window.addEventListener("online", () => setBanner(state.usingCache ? "Соединение восстановлено. Нажмите «Обновить», чтобы получить свежие данные." : ""));
 window.addEventListener("offline", () => setBanner("Нет сети. Доступна сохранённая версия приложения и ранее загруженные данные."));
-if ("speechSynthesis" in window) {
-  loadVoices();
-  speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
-}
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(error => console.warn("Service Worker не зарегистрирован", error)));
 
 updateDeckSwitch();
