@@ -807,7 +807,7 @@ function speakJapanese(source, button = null) {
     audio.onended = finish;
     audio.onerror = () => {
       finish();
-      showToast("MP3 пока не найден в папке audio.");
+      showToast("MP3 не найден в папке genki_audio.");
     };
     audio.play().catch(() => {
       finish();
